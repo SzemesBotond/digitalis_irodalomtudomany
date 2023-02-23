@@ -73,10 +73,7 @@ for(i in 1:length(szavak)){
 
 
 #szűréshez kiírás
-elvontbirt_szo2 <- list()
-for(i in 1:length(elvontbirt_szo1)){
-  elvontbirt_szo2[[i]] <- unlist(elvontbirt_szo[[i]], recursive =  F)
-}
+elvontbirt_szo2 <- sapply(elvontbirt_szo, unlist, recursive = F)
 kiiras <- unique(unlist(elvontbirt_szo2))
 options(max.print=1000000)
 capture.output(kiiras, file="elvontstop.txt")

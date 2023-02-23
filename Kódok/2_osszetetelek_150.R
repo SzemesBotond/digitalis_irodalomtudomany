@@ -38,24 +38,17 @@ ment_ig <- "((^| )(elárul|eldönt|elképzel|ért|érdekel|érdekl|tud|kérde|k�
 ment_ig2 <- "(ni akar)|((^| )(elárul|eldönt|elképzel|érdekel|érdekl|tud|kérde|kérdi|megkréd|képzel|kitalál|megállapít|megért|megmutat|sejt))"
 library(stringr)
 #definialo, ido, hely, has tipus 
-vonmin <- list ()
-idomin <- list()
-hasmin <- list()
-helymin <- list ()
-for (i in 1:length(token_sent2)) {
-  hasmin[[i]] <- str_remove_all(token_sent2[[i]], "((akár|Akár) (.*?)akár )|( a mint | nem mint )")
-  vonmin [[i]] <- str_remove_all(token_sent2[[i]], "amint|(A|a)mikor|amiként|amiképp|amiatt|amidőn|amióta|amialatt|amielőtt|amiután|amíg ")
-  vonmin [[i]] <- gsub("(^| )a melyik", " amelyik", vonmin[[i]], ignore.case =  T)
-  vonmin [[i]] <- str_remove_all(vonmin [[i]], "( mint (aki|ami|ki))|( melyik)")
-  vonmin [[i]] <- gsub(paste(ment_ig,"([a-zíéáűúőóüö ]+|)(\\, )(mi|mely)", sep=""), "\\1\\2\\3\\4", vonmin [[i]])
-  vonmin [[i]] <- gsub(paste(ment_ig, "([a-zíéáűúőóüö]+|)(\\, )(ki)", sep=""), "\\1\\2\\3", vonmin [[i]],ignore.case = T)
-  idomin [[i]] <- gsub(paste(ment_ig2,"([a-zíéáűúőóüö]+|)(\\, )(mikor|mióta)", sep=""),"\\1\\2\\3", token_sent2 [[i]], ignore.case = T)
-  idomin [[i]] <- gsub("(\\, hogy)([a-zíűáéúőóüö ]+|) (mikor|mi kor|mióta|mi óta )", "\\1\\2 ", idomin[[i]],ignore.case = T)
-  idomin [[i]] <- str_remove_all(idomin[[i]], " mint (amikor|amióta |mióta |amidőn |midőn |mikor|mi kor)")
-  helymin [[i]] <- gsub(paste(ment_ig2,"([a-zíéáűúőóüö]+|)(\\, )(hol |hon|hov|merr|meddig)", sep=""),"\\1\\2\\3", token_sent2[[i]], ignore.case = T)
-  helymin [[i]] <- gsub("(\\, hogy)([a-zíűáéúőóüö ]+|) (hol |honnan |hová |hova)", "\\1\\2 ", helymin[[i]], ignore.case = T)
-  }
-
+hasmin <- lapply(token_sent2, str_remove_all,"((akár|Akár) (.*?)akár )|( a mint | nem mint )")
+vonmin <- lapply(token_sent2, str_remove_all, "amint|(A|a)mikor|amiként|amiképp|amiatt|amidőn|amióta|amialatt|amielőtt|amiután|amíg ")
+vonmin <- lapply(vonmin, function(x) gsub("(^| )a melyik", " amelyik", ignore.case=T, as.character(x)))
+vonmin <- lapply(vonmin, str_remove_all, "( mint (aki|ami|ki))|( melyik)")
+vonmin <- lapply(vonmin, function(x) gsub(paste(ment_ig,"([a-zíéáűúőóüö ]+|)(\\, )(mi|mely)", sep=""), "\\1\\2\\3\\4", ignore.case=T, as.character(x)))
+vonmin <- lapply(vonmin, function(x) gsub(paste(ment_ig, "([a-zíéáűúőóüö]+|)(\\, )(ki)", sep=""), "\\1\\2\\3", as.character(x)))
+idomin <- lapply(token_sent2, function(x) gsub(paste(ment_ig2,"([a-zíéáűúőóüö]+|)(\\, )(mikor|mióta)", sep=""),"\\1\\2\\3", ignore.case=T, as.character(x)))
+idomin <- lapply(token_sent2, function(x) gsub("(\\, hogy)([a-zíűáéúőóüö ]+|) (mikor|mi kor|mióta|mi óta )", "\\1\\2 ", ignore.case=T, as.character(x)))
+idomin  <- lapply(idomin, str_remove_all, " mint (amikor|amióta |mióta |amidőn |midőn |mikor|mi kor)")
+helymin <- lapply(token_sent2, function(x) gsub(paste(ment_ig2,"([a-zíéáűúőóüö]+|)(\\, )(hol |hon|hov|merr|meddig)", sep=""),"\\1\\2\\3", ignore.case=T, as.character(x)))
+helymin <- lapply(token_sent2, function(x) gsub("(\\, hogy)([a-zíűáéúőóüö ]+|) (hol |honnan |hová |hova)", "\\1\\2 ", ignore.case=T, as.character(x)))
 
 has <- kotoszavak_aranya(hasonlito, hasmin)
 hely <- kotoszavak_aranya(helyhatarozo, helymin)

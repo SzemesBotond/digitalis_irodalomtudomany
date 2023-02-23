@@ -21,36 +21,32 @@ my.corpus.l <- make.file.l(files.v, input.dir)
 #korpusz elokeszitese: nem listazni; oldalszamok kivetel, 
 #gondolatjel utani nagybetu, rovidites, idezojel,
 #zarojelen beluli irasjel
-regenyek <- c()
-for (i in 1:length(my.corpus.l)) {
-  regenyek[[i]] <- unlist(my.corpus.l[[i]], recursive = TRUE, use.names = TRUE)
-  regenyek [[i]] <- gsub("([0-9]+)([A-zöüóőúéáűí])", "\\2", regenyek[[i]])
-  regenyek [[i]] <- gsub("(– )([A-ZÖÜÓŐÚÉÁŰÍ])", "\\2", regenyek[[i]])
-  regenyek [[i]] <- gsub("(- )([A-ZÖÜÓŐÚÉÁŰÍ])", "\\2", regenyek[[i]])
-  regenyek [[i]] <- gsub("(\\.\\.\\.)( [A-ZÖÜÓŐÚÉÁŰÍ])", "\\.\\2", regenyek[[i]])
-  regenyek [[i]] <- gsub("([A-zzöüóőúéáűí])(-)", "\\1", regenyek[[i]])
-  regenyek [[i]] <- gsub("([[:punct:]])([A-zzöüóőúéáűí])", "\\2", regenyek[[i]])
-  regenyek [[i]] <- gsub("Dr\\. ", "Dr ", regenyek[[i]], ignore.case = TRUE)
-  regenyek [[i]] <- gsub("stb\\. ", "stb ", regenyek[[i]])
-  regenyek [[i]] <- gsub("Özv\\. ", "Özv ", regenyek[[i]], ignore.case = TRUE)
-  regenyek [[i]] <- gsub("ifj\\. ", "ifj ", regenyek[[i]])
-  regenyek [[i]] <- gsub("ún\\. ", "ún ", regenyek[[i]])
-  regenyek [[i]] <- gsub("St\\. ", "st ", regenyek[[i]])
-  regenyek [[i]] <- gsub("( [A-zzöüóőúéáűí])(\\.)", "\\1", regenyek[[i]])
-  regenyek [[i]] <- gsub("([.?!])( [a-zöüóőúéáűí])", "\\2", regenyek[[i]])
-  regenyek [[i]] <- gsub("([.?!])( [a-zöüóőúéáűí])", "\\2", regenyek[[i]])
-  regenyek [[i]] <- gsub("([.?!])([\\)] [a-zöüóőúéáűí])", "\\2", regenyek[[i]])
-  }
+regenyek <- sapply(my.corpus.l, unlist,recursive = TRUE, use.names = TRUE)
+regenyek <-  sapply(regenyek,function(x) gsub("([0-9]+)([A-zöüóőúéáűí])", "\\2",as.character(x)))
+regenyek <-  sapply(regenyek,function(x) gsub("(– )([A-ZÖÜÓŐÚÉÁŰÍ])", "\\2",as.character(x)))
+regenyek <-  sapply(regenyek,function(x) gsub("(- )([A-ZÖÜÓŐÚÉÁŰÍ])", "\\2",as.character(x)))
+regenyek <-  sapply(regenyek,function(x) gsub("(\\.\\.\\.)( [A-ZÖÜÓŐÚÉÁŰÍ])", "\\.\\2",as.character(x)))
+regenyek <-  sapply(regenyek,function(x) gsub("([A-zzöüóőúéáűí])(-)", "\\1",as.character(x)))
+regenyek <-  sapply(regenyek,function(x) gsub("([[:punct:]])([A-zzöüóőúéáűí])", "\\2",as.character(x)))
+regenyek <-  sapply(regenyek,function(x) gsub("Dr\\. ", "Dr ",as.character(x)))
+regenyek <-  sapply(regenyek,function(x) gsub("stb\\. ", "stb ",as.character(x)))
+regenyek <-  sapply(regenyek,function(x) gsub("Özv\\. ", "Özv ",as.character(x)))
+regenyek <-  sapply(regenyek,function(x) gsub("ifj\\. ", "ifj ",as.character(x)))
+regenyek <-  sapply(regenyek,function(x) gsub("ún\\. ", "ún ",as.character(x)))
+regenyek <-  sapply(regenyek,function(x) gsub("St\\. ", "st ",as.character(x)))
+regenyek <-  sapply(regenyek,function(x) gsub("( [A-zzöüóőúéáűí])(\\.)", "\\1", as.character(x)))
+regenyek <-  sapply(regenyek,function(x) gsub("([.?!])( [a-zöüóőúéáűí])", "\\2", as.character(x)))
+regenyek <-  sapply(regenyek,function(x) gsub("([.?!])( [a-zöüóőúéáűí])", "\\2", as.character(x)))
+regenyek <-  sapply(regenyek,function(x) gsub("([.?!])([\\)] [a-zöüóőúéáűí])", "\\2", as.character(x)))
+
 
 
 #tokenizer csomag - mondatokra, szavakra, beture szegentalas
 library(tokenizers)
 token_sent <- sapply(regenyek, tokenize_sentences)
-token_sent2 <- list ()
-for (i in 1:length(token_sent)) {
-  token_sent2[[i]] <- unlist(token_sent[[i]], recursive = TRUE, use.names = TRUE)
-}  
+token_sent2 <- sapply(token_sent, unlist, recursive = TRUE, use.names = TRUE)
 sentence_words <- sapply(token_sent2, tokenize_words)
+
 # fejezet es fejezet-szam kivetele
 sw <- list()
 for (i in 1:length(sentence_words)) {
@@ -59,12 +55,12 @@ for (i in 1:length(sentence_words)) {
     
 }
 
-sentence_letter <- list()
-for (i in 1:length(sw)) {
-  sentence_letter [[i]] <- sapply(token_sent2 [[i]], tokenize_characters)
-  sentence_letter [[i]] <- sentence_letter [[i]][which(!grepl("^[0-9]", sentence_letter [[i]]))]
-  }
 
+#sentence_letter <- list()
+#for (i in 1:length(sw)) {
+#  sentence_letter [[i]] <- sapply(token_sent2 [[i]], tokenize_characters)
+#  sentence_letter [[i]] <- sentence_letter [[i]][which(!grepl("^[0-9]", sentence_letter [[i]]))]
+#  }
 
 #mondathossz, 0-k kiszedese
 sentence_length <- list ()
@@ -73,19 +69,11 @@ for (i in 1:length(sw)) {
   sentence_length [[i]] <- sentence_length[[i]][which(sentence_length[[i]] !=0)]
   }
 
-
-
 #szavak szama
-szavak_szama <- list()
-for (i in 1:length(sentence_length)) {
-  szavak_szama [[i]] <- sum (sentence_length[[i]])
-}
+szavak_szama <- lapply(sentence_length, sum)
 
 #mondatok szama
-mondatok_szama <- list ()
-for (i in 1:length(sentence_length)){
-  mondatok_szama[[i]] <- length(sentence_length[[i]])
-}
+mondatok_szama <- lapply(sentence_length, length)
 
 #betuk szama
 letter_length <- list ()
@@ -93,12 +81,7 @@ for (i in 1:length(sw)) {
   letter_length [[i]] <- sapply(sentence_letter[[i]], length)
   letter_length [[i]] <- letter_length[[i]][which(letter_length[[i]] !=0)]
 }
-betuk_szama <- list()
-for (i in 1:length(sentence_letter)) {
-  betuk_szama [[i]] <- sum (letter_length[[i]])
-}
-
-
+betuk_szama  <- lapply(letter_length, sum)
 
 
 #alap metrikak
