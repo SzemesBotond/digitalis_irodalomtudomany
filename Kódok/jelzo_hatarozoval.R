@@ -6,50 +6,63 @@ for(i in 1:length(files.v)){
   my.corpus.l [[i]] <- read.table(paste(input.dir, files.v[[i]], sep="/"), header = FALSE, fill = TRUE, encoding = "UTF-8", blank.lines.skip = FALSE)
 }
 
-
-
-mn <- list()
-mn11 <- list()
-mn2<- list()
-mn21<- list()
-mn22<- list()
-mn23<- list()
-for(i in 1:length(my.corpus.l)){
-  mn [[i]] <- grep("ADJ", my.corpus.l[[i]]$V3, ignore.case = T)
-  #mn11 [[i]] <-grep("(Sing|Pres)$", my.corpus.l[[i]]$V4, ignore.case = T) #V5 ha emagyar és Sing a vége: $
-  #mn[[i]] <- intersect(mn[[i]], mn11[[i]])
-  mn2 [[i]] <-intersect(mn[[i]]-1, mn[[i]])
-  mn21 [[i]] <- grep("(ul|ül|an|en)$", my.corpus.l[[i]]$V1, ignore.case = T)
-  mn2 [[i]] <-intersect(mn2[[i]], mn21[[i]])
+## használt függvények
+intersect_lists <- function (x,y) {
+  lapply(seq(length(my.corpus.l)),
+         function(i) Reduce(intersect,lapply(list(x, y),"[[",i)))
 }
 
-
-jelzett_jelzo <- szavak
-for(i in 1:length(szavak)){
-  jelzett_jelzo[[i]] <- list(szavak[[i]])
-  for(j in 1:length(mn2[[i]])){
-    if(length(mn2[[i]])>0)
-      jelzett_jelzo[[i]][[j]] <- szavak[[i]][mn2[[i]][[j]]:(mn2[[i]][[j]]+1)]}
+grep_list_df <- function (x, y){
+  lapply(my.corpus.l, 
+         function(df) grep(x, df[,y], ignore.case = T))
 }
 
-
-jelzett_jelzo2 <- jelzett_jelzo
-for(i in 1:length(jelzett_jelzo)){
-  jelzett_jelzo2[[i]] <- list(jelzett_jelzo[[i]])
-  for(j in 1:length(jelzett_jelzo[[i]])){
-    jelzett_jelzo2[[i]][[j]] <- jelzett_jelzo[[i]][[j]][!grepl("(teljesen|gyorsan|lassan|folyamatosan|erősen|túlságosan|biztosan|egyszerűen)", jelzett_jelzo[[i]][j])]
-  }
-}
-for(i in 1:length(jelzett_jelzo2)){
-  jelzett_jelzo2[[i]] <- jelzett_jelzo2[[i]][which(jelzett_jelzo2[[i]] != "character(0)")]
+prev_pos <- function (a){
+  lapply(a, function(x) x-1)
 }
 
-
-jelzett_jelzo_szama <- list()
-jelzett_jelzo_aranya <- list()
-for (i in 1:length(jelzett_jelzo2)){
-  jelzett_jelzo_szama[[i]] <- length(jelzett_jelzo2[[i]])
-  jelzett_jelzo_aranya[[i]] <- jelzett_jelzo_szama[[i]]/szavak_szama[[i]]*1000
+next_pos <- function (a,b){
+  lapply(a, function(x) x+b)
 }
 
-unlist(jelzett_jelzo_aranya)
+mn <- grep_list_df("ADJ", 3)
+#mn11 <-grep_list_df("(Sing|Pres)$", V4) #V5 ha emagyar és Sing a vége: $
+#mn <- intersect_lists(mn, mn11)
+mn2 <-intersect_lists(prev_pos(mn), mn)
+mn21_0 <- grep_list_df("(ul|ül|an|en)$", 1)
+jelzo <-intersect_lists(mn2, mn21)
+jelzett <- next_pos(jelzo, 1)
+
+
+#a pozícióknak megfelelő szópárok
+szavak <- lapply(my.corpus.l, "[", , "V1")
+lemmák <- lapply(my.corpus.l, "[", , "V2")
+jelzo_szo <- Map(`[`, szavak, jelzo )
+jelzett_szo <- Map(`[`, szavak, jelzett)
+jelzett_jelzo <- sapply(seq(length(jelzo_szo)),
+                        function(i) lapply(
+                          seq(length(jelzo_szo[[i]])),
+                          function (j) c(
+                            jelzo_szo[[i]][j],jelzett_szo[[i]][j], jelzett_lemma[[i]][j]
+                          )))
+#stopszó-szűrés
+stop <- tibble(stop=c("teljesen",
+                      "gyorsan",
+                      "lassan",
+                      "folyamatosan",
+                      "erősen",
+                      "túlságosan",
+                      "biztosan",
+                      "egyszerűen",
+                      "amolyan"))
+
+jelzett_jelzo_df <- lapply(seq(length(jelzo_szo)), 
+                           function (i) tibble(határozó = jelzo_szo[[i]], jelző = jelzett_szo[[i]] ))
+jelzett_jelzo_szurt <- lapply(seq(length(my.corpus.l)),
+                              function(i) jelzett_elvont_df[[i]] %>%
+                                anti_join(stop, by = c("határozó"="stop")))
+
+
+jelzett_jelzo_szama <- lapply(jelzett_jelzo_szurt, nrow)
+jelzett_jelzo_aranya <- sapply(mapply(FUN = `/`, jelzett_jelzo_szama, szavak_szama, SIMPLIFY = FALSE), function(x) x*1000)
+

@@ -6,126 +6,94 @@ for(i in 1:length(files.v)){
   my.corpus.l [[i]] <- read.table(paste(input.dir, files.v[[i]], sep="/"), header = FALSE, fill = TRUE, encoding = "UTF-8", blank.lines.skip = FALSE)
 }
 
+## használt függvények
+intersect_lists <- function (x,y) {
+  lapply(seq(length(my.corpus.l)),
+         function(i) Reduce(intersect,lapply(list(x, y),"[[",i)))
+}
+
+union_lists <- function (x,y) {
+  lapply(seq(length(my.corpus.l)),
+         function(i) Reduce(union,lapply(list(x, y),"[[",i)))
+}
+
+grep_list_df <- function (x, y){
+  lapply(my.corpus.l, 
+         function(df) grep(x, df[,y], ignore.case = T))
+}
+
+prev_pos <- function (a){
+  lapply(a, function(x) x-1)
+}
+
+next_pos <- function (a,b){
+  lapply(a, function(x) x+b)
+}
+
 #ság/ség, ás/és képző és a képzett melléknevek egymás után
-elvont <- list()
-fn <- list()
-fn2 <- list()
-fn3 <- list ()
-elvont_fn <-list()
-mn <- list ()
-mn2 <- list ()
-mn3 <- list()
-mn21 <- list()
-jelzo <- list()
-for(i in 1:length(my.corpus.l)){
-  elvont [[i]] <- grep("[a-zíéáűúőóüö]+(ság|ség|ás|és)$", my.corpus.l[[i]]$V2, ignore.case=T)
-  fn [[i]] <- grep("NOUN", my.corpus.l[[i]]$V3, ignore.case = T)
-  #fn2 [[i]] <- grep("Sing$", my.corpus.l[[i]]$V4, ignore.case = T)
-  fn3 [[i]] <- grep("Dat|Acc|Nom|Ins", my.corpus.l[[i]]$V4, ignore.case = T)
-  mn [[i]] <- grep("ADJ", my.corpus.l[[i]]$V3, ignore.case = T)
-  mn2 [[i]] <- grep("(i|as|es|ös|os|ú|ű|tlan|tlen|talan|telen|ó)$", my.corpus.l[[i]]$V1, ignore.case = T)
-  mn3 [[i]] <- grep("PartPast", my.corpus.l[[i]]$V4)
-  mn21 [[i]] <- union(mn2[[i]], mn3[[i]])
-  mn [[i]] <- intersect(mn[[i]], mn21[[i]])
-  elvont_fn[[i]] <- intersect(elvont [[i]], fn[[i]])
-  #elvont_fn[[i]] <- intersect(elvont_fn [[i]], fn2[[i]])
-  elvont_fn[[i]] <- intersect(elvont_fn [[i]], fn3[[i]])
-  jelzo [[i]] <- intersect(elvont_fn [[i]]-1, mn[[i]])
-  }
+elvont <- grep_list_df("[a-zíéáűúőóüö]+(ság|ség|ás|és)$", 2)
+fn <- grep_list_df("NOUN", 3)
+#fn2 <- grep_list_df("Sing$", 5)
+fn3 <- grep_list_df("Dat|Acc|Nom|Ins", 4)
+fn <- intersect_lists(fn, fn3) #lehetne fn2 is
+mn <- grep_list_df("ADJ", 3)
+mn2 <- grep_list_df("(i|as|es|ös|os|ú|ű|tlan|tlen|talan|telen|ó)$", 1)
+mn3 <- grep_list_df("PartPast", 4)
+mn21 <- union_lists(mn2, mn3)
+mn <- intersect_lists(mn, mn21)
+elvont_fn <- intersect_lists(elvont, fn)
+#elvont_fn <- intersect_lists(elvont_fn, fn2)
+elvont_fn <- intersect_lists(elvont_fn , fn3)
+jelzo <- intersect_lists(prev_pos(elvont_fn), mn)
+jelett <- next_pos(jelzo, 1)
 
 #a pozícióknak megfelelő szópárok
-szavak <- list()
-for(i in 1:length(my.corpus.l)){
-  szavak [[i]] <- my.corpus.l[[i]]$V1
-}
-jelzett_elvont <- szavak
-for(i in 1:length(szavak)){
-  jelzett_elvont[[i]] <- list(szavak[[i]])
-  for(j in 1:length(jelzo[[i]])){
-    if(length(jelzo[[i]])>0)
-    jelzett_elvont[[i]][[j]] <- szavak[[i]][jelzo[[i]][[j]]:(jelzo[[i]][[j]]+1)]}
-    }
+szavak <- lapply(my.corpus.l, "[", , "V1")
+lemmák <- lapply(my.corpus.l, "[", , "V2")
+jelzo_szo <- Map(`[`, lemmák, jelzo )
+jelzett_szo <- Map(`[`, szavak, jelzett)
+jelzett_lemma <- Map(`[`, lemmák, jelzett)
+jelzett_elvont <- sapply(seq(length(jelzo_szo)),
+                         function(i) lapply(
+                           seq(length(jelzo_szo[[i]])),
+                           function (j) c(
+                             jelzo_szo[[i]][j],jelzett_szo[[i]][j], jelzett_lemma[[i]][j]
+                           )))
 
 #egy-két főnév kiszűrése - először minden egyedi főnév kimentése
-elvont_fn_list <- szavak
-for(i in 1:length(jelzo)){
-  elvont_fn_list[[i]] <- list(szavak[[i]])
-  for(j in 1:length(jelzo[[i]])){
-    elvont_fn_list[[i]][[j]] <- my.corpus.l[[i]]$V2[(jelzo[[i]][[j]]+1)]
-  }
-}
-elvont_fn_list <- unique(unlist(elvont_fn_list))
-capture.output(elvont_fn_list, file="YOUR DIRECTORY/elvont_fn.txt")
-# kézi meghatározás után a szavak kiszűrése
-jelzett_elvont1 <- jelzett_elvont
-for(i in 1:length(jelzett_elvont)){
-  jelzett_elvont1[[i]] <- list(jelzett_elvont[[i]])
-  for(j in 1:length(jelzett_elvont[[i]])){
-    jelzett_elvont1[[i]][[j]] <- jelzett_elvont[[i]][[j]][!grepl("(oriás|evező-csapás|idő-töltés|személyiség|igazságszolgáltatás|
-    tevékenység|állás|nézés|kávés|meghivás|festés|lakás|könyvkereskedés|gondolázás|lépés|
-    asztaltársaság|járás|kaszás|nyilás|feleség|fakultás|termés|ellenség|rendszerváltozás|vonás|ujság|fogás|
-    írás|előadás|hatóság|Hollaki-társaság|
-    asszonyság|fenség|közönség|czigányprimás|fogadás|kurjogatás|sikoltozás|
-    dudás|prés|biróság|helyiség|állomás|óbégatás|bokréta-óriás|csárdás|sipkás|felvonás|
-    pajtás|megjegyzés|irás|népség|óriás|fejbeverés|lámpás|válás|majorság|papipalás|vasútállomás|újság|rónaság|
-    Kinder-tojás|pelenkaféleség|bundás|tisztás|sajtféleség|időjárás|
-    alvás|vetés|fizetés|házasság|vallás|júdás|jeremiás|sírás|
-    intés|rés|tűzrakás|ritkás|vízállás|helység|helyőrség|kés|
-    földhányás|repedés|köpés|ütés|hitközség|fürdés|kiadás|sertés|
-    lövés|testőrség|pattanás|muskétás|fűtés|Újság|munkás|segédmunkás|ifjúmunkás|rendőrkapitányság|
-    rendőrség|téglás|gyűlés|hagymamártás|zárás|diákszövetség|villamoscsengetés|
-    kutyaugatás|kiejtés|bizottság|tojás|Parcen-rokonság|kamillaborogatás|letartóztatás|
-    irodahelyiség|kirándulás|telefonhívás|felhívás|lakosság|
-    prolinépség|kézírás|könyökforgatás|szállítómunkás|
-    lábcsoszogás|lábmosás|mértékegység|cserjés|kacsatojás|
-    síkfutás|hímzés|ajtónyílás|költség|
-    pohárcsörrenés|arzéngyilkosság|sarkantyúpengés|
-    figyelmeztetésre|légycsípés|kocsmázás|ülés|röhögés|
-    kereszteződés|valami|kézmosás|nagytakarítás|vendégszereplés|napfogyatkozás)", jelzett_elvont[[i]][j])]
-      }
-}
+#elvont_fn_list <- unique(unlist(jelzett_szo))
+#capture.output(elvont_fn_list, file="YOUR DIRECTORY/elvont_fn.txt")
 
-for(i in 1:length(jelzett_elvont1)){
-  jelzett_elvont1[[i]] <- jelzett_elvont1[[i]][which(jelzett_elvont1[[i]] != "character(0)")]
-}
+# kézi meghatározás után a szavak kiszűrése
+stop <- scan(paste("YOUR DIRECTORY/elvontstop.txt", sep="/"),
+             what="character", sep="\f", quote = "", encoding = "UTF8")
+stop <- data_frame(stop)
+
+jelzett_elvont_df <- lapply(seq(length(jelzo_szo)), 
+                            function (i) tibble(jelzo = jelzo_szo[[i]], fn = jelzett_szo[[i]], fnlemma = jelzett_lemma[[i]] ))
+jelzett_elvont_szurt <- lapply(seq(length(my.corpus.l)),
+                               function(i) jelzett_elvont_df[[i]] %>%
+                                 anti_join(stop, by = c("fnlemma"="stop")))
 
 #regények elnevezése, a szószerkezetek kimentése
-library(stringr)
-for (i in 1:length(files.v)) {
-  files.v[[i]] <- str_remove_all(files.v[[i]], ".txt")
-  files.v[[i]] <- str_remove_all(files.v[[i]], "out_")
-}
-names(jelzett_elvont1) <- files.v
+files.v <- lapply(files.v, str_remove_all, "(.txt|out_)")
+names(jelzett_elvont_szurt) <- files.v
+options(dplyr.print_max = 1e9)
+capture.output(jelzett_elvont_szurt, file="proba.txt")
 
-capture.output(jelzett_elvont1, file="YOUR DIRECTORY/jelzett_elvont.txt")
-
-# szavak_szama mondathossz
+#
 
 
-jelzett_elvont_szama <- list()
-jelzett_elvont_aranya <- list()
-for (i in 1:length(jelzett_elvont1)){
-  jelzett_elvont_szama[[i]] <- length(jelzett_elvont1[[i]])
-  jelzett_elvont_aranya[[i]] <- jelzett_elvont_szama[[i]]/szavak_szama[[i]]*1000
-}
+jelzett_elvont_szama <- lapply(jelzett_elvont_szurt, nrow)
+jelzett_elvont_aranya <- sapply(mapply(FUN = `/`, jelzett_elvont_szama, szavak_szama, SIMPLIFY = FALSE), function(x) x*1000)
 
-unlist(jelzett_elvont_aranya)
 
 #-val-vel
 
-elvont_fnval <- list()
-for (i in 1:length(elvont_fn)){
-  elvont_fnval [[i]] <- grep("[a-zíűáéúőóüö]+(ssal|ggal)", jelzett_elvont[[i]])
-  elvont_fnval [[i]] <- jelzett_elvont[[i]][elvont_fnval [[i]]]
-  }
-  
-jelzett_elvontval_szama <- list()
-jelzett_elvontval_aranya <- list()
-for (i in 1:length(elvont_fnval)){
-  jelzett_elvontval_szama[[i]] <- length(elvont_fnval[[i]])
-  jelzett_elvontval_aranya[[i]] <- jelzett_elvontval_szama[[i]]/szavak_szama[[i]]*1000
-}
+elvont_fnval <- lapply(seq(length(my.corpus.l)),
+                       function(i) jelzett_elvont_szurt[[i]]%>% 
+                         filter(grepl("[a-zíűáéúőóüö]+(ssal|ggal)", fn)))
 
-unlist(jelzett_elvontval_aranya)
-
+jelzett_elvontval_szama <- lapply(elvont_fnval, nrow)
+jelzett_elvontval_aranya <- sapply(mapply(FUN = `/`, jelzett_elvontval_szama, szavak_szama, SIMPLIFY = FALSE), function(x) x*1000)
 
