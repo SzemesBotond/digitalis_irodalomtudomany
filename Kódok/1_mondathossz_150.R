@@ -1,8 +1,6 @@
-#metaadat a magyar_regeny_100_jav2 tablazat elso 4 oszlopa, vagolaprol
-#de kulon tablazatbol is betoltheto
-
 metaadat <- read.table(file = "clipboard", 
                        sep = "\t", header=TRUE)
+
 
 #korpusz betoltese - elotte regex kiszedi a romai szamokat
 input.dir <- "YOUR DIRECTORY"
@@ -100,6 +98,7 @@ plot(metaadat$Év, metaadat$MeanSentenceLength, main = "Átlagos mondathossz, 18
 abline(h=15, col = "black")
 abline(h=10, col = "black")
 
+#az eredmények hozzáadésa a metaadatokat tartalmazó táblázathoz majd vizualizáció                    
 
 library(ggplot2)
 ggplot(metaadat, aes(Év, MeanSentenceLength)) + 
